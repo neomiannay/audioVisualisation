@@ -29,6 +29,7 @@ const canvas = document.querySelector('canvas.webgl')
 
 // Scene
 const scene = new THREE.Scene()
+scene.background = new THREE.Color(0x424242)
 
 let dpr = window.devicePixelRatio
 
@@ -90,7 +91,7 @@ new p5(s)
  */
 // Geometry
 const geometry = new THREE.SphereGeometry(1, 300, 300)
-const planeGeometry = new THREE.PlaneGeometry(15, 15, 20, 20)
+const planeGeometry = new THREE.PlaneGeometry(10, 10, 20, 20)
 
 // Color
 debugObject.depthColor = "#d57e43"
@@ -127,10 +128,8 @@ const material = new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
     // wireframe: true
 })
-material.needsUpdate = true
-
 const planeMaterial = new THREE.MeshPhongMaterial({
-    color: 0xffffff,
+    color: 0x424242,
     side: THREE.DoubleSide,
 })
 
@@ -165,20 +164,9 @@ gui.add(material.uniforms.uColorMultiplier, 'value').min(0).max(10).step(0.001).
 
 // Mesh
 const mesh = new THREE.Mesh(geometry, material)
-// mesh.customDepthMaterial = material
-// mesh.position.x = -1
-
 const planeMesh = new THREE.Mesh(planeGeometry, planeMaterial)
-mesh.castShadow = true
-mesh.receiveShadow = true;
-mesh.material.needsUpdate = true;
-
-planeMesh.position.y = -2
+planeMesh.position.y = -1.5
 planeMesh.rotation.x = -Math.PI * 0.5
-
-planeMesh.castShadow = true
-planeMesh.receiveShadow = true
-planeMesh.material.needsUpdate = true
 scene.add(mesh, planeMesh)
 
 /**
@@ -218,28 +206,26 @@ scene.add(camera)
 const controls = new OrbitControls(camera, canvas)
 controls.enableDamping = true
 controls.enableZoom = true
+controls.minPolarAngle = Math.PI * 0.25
+controls.maxPolarAngle = Math.PI * 0.5
 
 
 /**
  * Lights
  */
-const sunLight = new THREE.DirectionalLight('#ffffff', 4)
-sunLight.castShadow = true
-sunLight.shadow.camera.far = 15
-sunLight.shadow.mapSize.set(1024, 1024)
-sunLight.shadow.normalBias = 0.05
-sunLight.position.set(1.5, 2, - 1.25)
-sunLight.target.position.set(0, 0, 0)
-scene.add(sunLight)
+const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+const pointLight = new THREE.PointLight(0xffffff, 0.5)
+pointLight.position.set(2, 3, 4)
+pointLight.lookAt(mesh.position)
+scene.add(ambientLight, pointLight)
 
 
 /**
  * Renderer
  */
 const renderer = new THREE.WebGLRenderer({
-    canvas: canvas,
+    canvas: canvas
 })
-renderer.shadowMap.enabled = true
 renderer.setSize(sizes.width, sizes.height)
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
@@ -255,6 +241,18 @@ document.querySelector('#start').addEventListener('click', () => {
         z: 3,
         ease: "power3.inOut"
     })
+    gsap.to(mesh.rotation, {
+        duration: 1,
+        x: -3,
+        y: 0,
+        z: 3,
+        ease: "power3.inOut"
+    })
+
+    // // // Make the camera move according to the mouse position
+    // camera.position.x = -cursor.x * 0.4
+    // camera.position.y = cursor.y * 0.4
+    // camera.lookAt(mesh.position)
 })
 
 
@@ -268,16 +266,9 @@ const tick = () =>
     controls.update()
     let elapsedTime = clock.getElapsedTime()
 
-    // Make the camera move according to the mouse position
-    // camera.position.x = -cursor.x * 0.4
-    // camera.position.y = cursor.y * 0.4
-    // camera.lookAt(mesh.position)
-    
-    mesh.geometry.computeVertexNormals()
-    mesh.geometry.attributes.position.needsUpdate = true
-    mesh.geometry.attributes.normal.needsUpdate = true
-    
+    mesh.rotation.y = elapsedTime * 0.5
 
+    
     material.uniforms.uTime.value = elapsedTime
     material.uniforms.mouse.value = cursor
     material.uniforms.u_bass.value = mapBass
@@ -285,10 +276,9 @@ const tick = () =>
     material.uniforms.uDepthColor.value = new THREE.Color(`hsl(${vColor}, 100%, 50%)`)
     material.uniforms.uSurfaceColor.value = new THREE.Color(`hsl(${vColor + 100}, 100%, 50%)`)
 
-
     // Render
     renderer.render(scene, camera)
-    // console.table([mapBass, mapMid, vColor]);
+    console.table([mapBass, mapMid, vColor]);
 
     // Call tick again on the next frame
     window.requestAnimationFrame(tick)
