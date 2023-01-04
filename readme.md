@@ -14,3 +14,9 @@ npm run dev
 # Build for production in the dist/ directory
 npm run build
 ```
+
+# HTTP requirement
+because of using p5 sound library, you need to change the https url by
+```bash
+http
+```
